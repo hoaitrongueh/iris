@@ -295,3 +295,5 @@ hl.config({
 dofile(os.getenv("HOME") .. "/.config/hypr/workflow.lua")
 
 dofile(os.getenv("HOME") .. "/.config/hypr/glass.lua")
+
+dofile(os.getenv("HOME") .. "/.config/hypr/iris.lua")

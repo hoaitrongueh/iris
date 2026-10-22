@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+role=${1:-float}
+case "$role" in
+    float|tile)
+        hyprctl eval 'iris_leave_dashboard()' >/dev/null
+        exec systemd-run --user --quiet --collect --service-type=exec \
+            --property=ExitType=cgroup --property=PartOf=graphical-session.target \
+            --slice=app-graphical.slice --description=IRIS-terminal -- kitty --single-instance --instance-group iris-interactive --class "iris-$role" ;;
+    scratch) exec "$HOME/.local/bin/iris-dashboard" scratch ;;
+    *) printf 'Usage: iris-terminal float|tile|scratch\n' >&2; exit 2 ;;
+esac

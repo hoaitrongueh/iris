@@ -1,0 +1,55 @@
+{
+  "logo": {
+    "type": "small",
+    "source": "arch",
+    "color": {
+      "1": "white",
+      "2": "white"
+    },
+    "padding": {
+      "right": 3
+    }
+  },
+  "display": {
+    "separator": "  ",
+    "color": {
+      "keys": "white",
+      "title": "white"
+    }
+  },
+  "modules": [
+    {
+      "type": "title",
+      "format": "{user-name}@{host-name}"
+    },
+    "separator",
+    {
+      "type": "os",
+      "key": "OS",
+      "format": "{name}"
+    },
+    {
+      "type": "kernel",
+      "key": "KERNEL"
+    },
+    {
+      "type": "uptime",
+      "key": "UPTIME"
+    },
+    {
+      "type": "memory",
+      "key": "RAM"
+    },
+    {
+      "type": "gpu",
+      "key": "GPU",
+      "format": "{name}",
+      "detectionMethod": "pci"
+    },
+    "break",
+    {
+      "type": "custom",
+      "format": "I R I S  /  ARCH \u00b7 HYPRLAND"
+    }
+  ]
+}

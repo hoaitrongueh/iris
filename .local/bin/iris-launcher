@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+hyprctl eval 'iris_leave_dashboard()' >/dev/null
+exec fuzzel --config "$HOME/.config/iris/fuzzel.ini"
