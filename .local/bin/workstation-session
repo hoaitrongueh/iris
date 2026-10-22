@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+export PATH="$HOME/.local/bin:$PATH"
+command -v caelestia >/dev/null || {
+
+    systemctl --user start dunst.service
+    exit 0
+}
+command -v qs >/dev/null || { echo 'Caelestia requires Quickshell.' >&2; exit 1; }
+mkdir -p "$HOME/.local/state/caelestia"
+exec 9>"$HOME/.local/state/caelestia/session-start.lock"
+flock -n 9 || exit 0
+"$HOME/.local/bin/workstation-monochrome"
+
+systemctl --user stop dunst.service
+if ! systemctl --user start workstation-caelestia.service 9>&-; then
+    systemctl --user start dunst.service
+    exit 1
+fi
+if command -v cliphist >/dev/null; then
+    systemctl --user start workstation-clipboard.service
+fi

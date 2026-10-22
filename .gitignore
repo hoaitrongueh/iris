@@ -1,0 +1,16 @@
+*.bak
+*.log
+*.pyc
+__pycache__/
+.cache/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*
+secrets*
+
+/Pictures/Wallpapers/Live/eerie-moon-outlast-2-moewalls-com.mp4

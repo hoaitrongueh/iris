@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Zen Browser
+Comment=Zen with the Iris dark profile and vertical tabs
+Exec=/home/iris/.local/bin/workstation-zen %u
+Icon=zen-browser
+Terminal=false
+Categories=Network;WebBrowser;
+MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;
+StartupNotify=true

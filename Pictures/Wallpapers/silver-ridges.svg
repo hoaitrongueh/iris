@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1440" viewBox="0 0 2560 1440">
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1">
+      <stop stop-color="#111111"/><stop offset=".6" stop-color="#303030"/><stop offset="1" stop-color="#171717"/>
+    </linearGradient>
+    <radialGradient id="haze" cx=".65" cy=".49" r=".65">
+      <stop stop-color="#929292" stop-opacity=".55"/><stop offset=".55" stop-color="#666666" stop-opacity=".15"/><stop offset="1" stop-color="#202020" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="far" x1="0" y1="0" x2=".2" y2="1">
+      <stop stop-color="#737373"/><stop offset="1" stop-color="#292929"/>
+    </linearGradient>
+    <linearGradient id="middle" x1=".7" y1="0" x2=".2" y2="1">
+      <stop stop-color="#555555"/><stop offset="1" stop-color="#171717"/>
+    </linearGradient>
+    <linearGradient id="near" x1=".3" y1="0" x2=".7" y2="1">
+      <stop stop-color="#323232"/><stop offset="1" stop-color="#0a0a0a"/>
+    </linearGradient>
+    <radialGradient id="moon">
+      <stop stop-color="#d0d0d0"/><stop offset=".94" stop-color="#a3a3a3"/><stop offset="1" stop-color="#858585"/>
+    </radialGradient>
+    <radialGradient id="halo">
+      <stop stop-color="#aaaaaa" stop-opacity=".15"/><stop offset="1" stop-color="#aaaaaa" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mist" x2="0" y2="1">
+      <stop stop-color="#999999" stop-opacity="0"/><stop offset=".55" stop-color="#999999" stop-opacity=".17"/><stop offset="1" stop-color="#999999" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="2560" height="1440" fill="url(#sky)"/>
+  <rect width="2560" height="1440" fill="url(#haze)"/>
+  <circle cx="1820" cy="380" r="230" fill="url(#halo)"/>
+  <circle cx="1820" cy="380" r="48" fill="url(#moon)"/>
+  <path d="M0 995 C190 966 345 902 510 849 C720 783 869 860 1070 760 C1290 648 1435 744 1590 693 C1810 619 1990 731 2185 669 C2310 629 2450 640 2560 623 L2560 1440 H0Z" fill="url(#far)"/>
+  <path d="M0 995 C190 966 345 902 510 849 C720 783 869 860 1070 760 C1290 648 1435 744 1590 693 C1810 619 1990 731 2185 669 C2310 629 2450 640 2560 623" fill="none" stroke="#a0a0a0" stroke-opacity=".3" stroke-width="1.5"/>
+  <rect y="720" width="2560" height="410" fill="url(#mist)"/>
+  <path d="M0 854 C270 809 396 910 615 954 C844 1000 1092 859 1315 920 C1530 980 1660 881 1870 914 C2080 948 2332 863 2560 1008 L2560 1440 H0Z" fill="url(#middle)"/>
+  <path d="M0 854 C270 809 396 910 615 954 C844 1000 1092 859 1315 920 C1530 980 1660 881 1870 914 C2080 948 2332 863 2560 1008" fill="none" stroke="#8c8c8c" stroke-opacity=".18" stroke-width="1"/>
+  <path d="M0 1195 C255 1177 430 1040 674 1094 C914 1147 1105 1090 1332 1069 C1575 1048 1815 1184 2031 1141 C2251 1097 2443 1114 2560 1165 L2560 1440 H0Z" fill="url(#near)"/>
+  <path d="M0 1195 C255 1177 430 1040 674 1094 C914 1147 1105 1090 1332 1069 C1575 1048 1815 1184 2031 1141 C2251 1097 2443 1114 2560 1165" fill="none" stroke="#747474" stroke-opacity=".22"/>
+</svg>

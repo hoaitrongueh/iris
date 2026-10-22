@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+matlab="$HOME/MATLAB/R2026b/bin/matlab"
+[[ -x "$matlab" ]] || { echo 'Existing MATLAB R2026b executable missing.' >&2; exit 1; }
+
+unset QT_QPA_PLATFORMTHEME
+export QT_QPA_PLATFORM=xcb
+export XDG_DATA_DIRS="${XDG_DATA_DIRS:-/usr/local/share:/usr/share}:/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share"
+
+backend=container
+if [[ ${1:-} == --native ]]; then backend=native; shift; fi
+run_matlab() {
+    if [[ $backend == native ]]; then exec "$matlab" "$@"; fi
+    podman container exists ubuntu-robotics || { echo 'Existing ubuntu-robotics unavailable; no container will be created.' >&2; exit 1; }
+    exec distrobox enter --name ubuntu-robotics --no-tty -- "$matlab" "$@"
+}
+mode=${1:---desktop}
+case "$mode" in
+    --desktop) shift "$(( $# > 0 ? 1 : 0 ))"; run_matlab -desktop "$@" ;;
+    --batch-check)
+        run_matlab -batch "assert(isequal(eye(2)*[1;2],[1;2])); disp('MATLAB_BASIC_OK'); disp(version); ver('simulink');"
+        ;;
+    --simulink-check)
+
+        scratch=$(mktemp -d "$HOME/.cache/matlab-smoke-XXXXXXXX")
+        cd "$scratch"
+        run_matlab -batch "p=fullfile(getenv('HOME'),'matlab-class-test','robotics_class_smoke_test.slx'); assert(isfile(p)); load_system(p); sim('robotics_class_smoke_test'); close_system('robotics_class_smoke_test',0); disp('SIMULINK_SMOKE_OK');"
+        ;;
+    --container-check)
+        podman container exists ubuntu-robotics || { echo 'Cannot access existing ubuntu-robotics; no container will be created.' >&2; exit 1; }
+        exec distrobox enter --name ubuntu-robotics --no-tty -- "$matlab" -batch "disp('DISTROBOX_MATLAB_OK'); disp(version);"
+        ;;
+    *) echo 'Usage: workstation-matlab [--native] [--desktop|--batch-check|--simulink-check|--container-check]' >&2; exit 2 ;;
+esac

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+for arg do
+    case "$arg" in
+        --ozone-platform|--ozone-platform=*) exec /usr/bin/chatgpt "$@" ;;
+    esac
+done
+if [ -n "${WAYLAND_DISPLAY:-}" ] && [ "${XDG_SESSION_TYPE:-}" = wayland ]; then
+    exec /usr/bin/chatgpt --ozone-platform=wayland "$@"
+fi
+exec /usr/bin/chatgpt "$@"

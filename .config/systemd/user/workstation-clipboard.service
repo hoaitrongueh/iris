@@ -1,0 +1,10 @@
+[Unit]
+Description=Caelestia clipboard history (upstream cliphist backend)
+PartOf=graphical-session.target
+After=graphical-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+ExecStart=/usr/bin/wl-paste --watch /usr/bin/cliphist store
+Restart=on-failure
+RestartSec=3

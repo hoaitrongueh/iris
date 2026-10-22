@@ -1,0 +1,16 @@
+[Unit]
+Description=Eerie Moon Outlast 2 native Wayland video wallpaper
+PartOf=graphical-session.target
+After=graphical-session.target workstation-caelestia.service
+ConditionEnvironment=WAYLAND_DISPLAY
+ConditionPathExists=%h/Pictures/Wallpapers/Live/eerie-moon-outlast-2-moewalls-com.mp4
+
+[Service]
+ExecStart=%h/.local/bin/wallpaper-live _run
+ExecStopPost=%h/.local/bin/wallpaper-live _fallback
+Restart=no
+TimeoutStopSec=10
+KillMode=control-group
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+for editor in code codium code-oss; do
+    if command -v "$editor" >/dev/null; then exec "$editor" "$@"; fi
+done
+if flatpak info com.vscodium.codium >/dev/null 2>&1; then
+    exec flatpak run com.vscodium.codium "$@"
+fi
+printf '%s\n' 'GUI editor is not installed. Run ~/arch-setup-resume.sh --install in Kitty.' >&2
+if command -v notify-send >/dev/null; then
+    notify-send 'Editor installation pending' 'Run ~/arch-setup-resume.sh --install in Kitty.'
+fi
+exit 1

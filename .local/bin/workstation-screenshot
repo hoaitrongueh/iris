@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Wayland snipping using the tools already required by Caelestia.
+
+One-shot helper, no daemon and no temporary screenshot files. A cancelled region
+never touches the clipboard. Annotations use Swappy's own Copy button/shortcut.
+"""
+import os
+import subprocess
+import sys
+
+mode = sys.argv[1] if len(sys.argv) == 2 else 'region'
+if mode not in ('region', 'annotate', 'full'):
+    sys.exit('Usage: workstation-screenshot [region|annotate|full]')
+
+def fail(message):
+    print(message, file=sys.stderr)
+    raise SystemExit(1)
+
+capture = ['grim', '-t', 'png', '-l', '2']
+try:
+    if mode != 'full':
+        selection = subprocess.run(
+            ['slurp', '-b', '#00000066', '-c', '#ccccccff', '-s', '#ffffff0a', '-w', '1'],
+            text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if selection.returncode or not selection.stdout.strip():
+
+            if selection.stderr.strip() and 'cancel' not in selection.stderr.lower():
+                print(selection.stderr.strip(), file=sys.stderr)
+                raise SystemExit(1)
+            raise SystemExit(0)
+        capture += ['-g', selection.stdout.strip()]
+    image = subprocess.run([*capture, '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if image.returncode:
+        fail(image.stderr.decode(errors='replace').strip() or 'Screen capture failed')
+    if not image.stdout.startswith(b'\x89PNG\r\n\x1a\n'):
+        fail('Capture did not produce a PNG; clipboard unchanged')
+
+    copied = subprocess.run(['wl-copy', '--type', 'image/png'], input=image.stdout)
+    if copied.returncode:
+        fail('Unable to copy screenshot to the Wayland clipboard')
+    if mode == 'annotate':
+
+        raise SystemExit(subprocess.run(['swappy', '-f', '-'], input=image.stdout).returncode)
+except FileNotFoundError as error:
+    fail(f'Missing screenshot dependency: {error.filename}')

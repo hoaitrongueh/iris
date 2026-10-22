@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=MATLAB R2026b
+Comment=MATLAB and Simulink in the existing Ubuntu robotics environment
+Exec=/home/iris/.local/bin/workstation-matlab --desktop
+TryExec=/home/iris/.local/bin/workstation-matlab
+Icon=applications-science
+Terminal=false
+Categories=Science;Math;
+StartupWMClass=MATLAB R2026b
+StartupNotify=false

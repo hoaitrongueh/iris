@@ -1,0 +1,152 @@
+{
+  "appearance": {
+    "transparency": {
+      "enabled": true,
+      "base": 0.72,
+      "layers": 0.45
+    },
+    "anim": {
+      "durations": {
+        "scale": 0.55
+      }
+    },
+    "padding": {
+      "scale": 0.52
+    },
+    "spacing": {
+      "scale": 0.64
+    },
+    "rounding": {
+      "scale": 0.48
+    },
+    "deformScale": 0,
+    "font": {
+      "scale": 0.82
+    }
+  },
+  "general": {
+    "apps": {
+      "terminal": [
+        "kitty"
+      ],
+      "explorer": [
+        "dolphin"
+      ],
+      "audio": [
+        "pavucontrol"
+      ]
+    },
+    "idle": {
+      "lockBeforeSleep": true,
+      "inhibitWhenAudio": true,
+      "timeouts": [
+        {
+          "timeout": 600,
+          "idleAction": "lock"
+        },
+        {
+          "timeout": 900,
+          "idleAction": "dpms off",
+          "returnAction": "dpms on"
+        }
+      ]
+    }
+  },
+  "background": {
+    "desktopClock": {
+      "enabled": false
+    },
+    "visualiser": {
+      "enabled": false
+    },
+    "enabled": true,
+    "wallpaperEnabled": false
+  },
+  "dashboard": {
+    "showWeather": false,
+    "showPerformance": true,
+    "showClockSeconds": false
+  },
+  "launcher": {
+    "vimKeybinds": false,
+    "favouriteApps": [
+      "kitty",
+      "com.opera.opera-gx"
+    ],
+    "maxShown": 5
+  },
+  "services": {
+    "smartScheme": false
+  },
+  "bar": {
+    "tray": {
+      "recolour": true,
+      "compact": true
+    },
+    "workspaces": {
+      "showWindows": false,
+      "shown": 3,
+      "showUnoccupied": false,
+      "activeTrail": false
+    },
+    "persistent": false,
+    "showOnHover": true,
+    "activeWindow": {
+      "compact": true
+    },
+    "clock": {
+      "showIcon": false,
+      "showSeconds": false,
+      "showDate": false
+    },
+    "entries": [
+      {
+        "id": "workspaces",
+        "enabled": true
+      },
+      {
+        "id": "spacer",
+        "enabled": true
+      },
+      {
+        "id": "tray",
+        "enabled": true
+      },
+      {
+        "id": "clock",
+        "enabled": true
+      },
+      {
+        "id": "statusIcons",
+        "enabled": true
+      }
+    ],
+    "statusIcons": [
+      {
+        "id": "network",
+        "enabled": true
+      },
+      {
+        "id": "battery",
+        "enabled": true
+      }
+    ]
+  },
+  "border": {
+    "thickness": 1,
+    "rounding": 10
+  },
+  "paths": {
+    "wallpaperDir": "~/Pictures/Wallpapers"
+  },
+  "sidebar": {
+    "enabled": true,
+    "showOnHover": false
+  },
+  "osd": {
+    "hideDelay": 1800,
+    "enableMicrophone": false,
+    "enableBrightness": true,
+    "enabled": false
+  }
+}

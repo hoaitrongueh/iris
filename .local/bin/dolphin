@@ -1,0 +1,4 @@
+#!/bin/sh
+
+export QT_QPA_PLATFORMTHEME=gtk3
+exec /usr/bin/dolphin "$@"

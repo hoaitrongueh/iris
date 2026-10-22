@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec /home/iris/.local/share/discord/discord --ozone-platform=wayland "$@"

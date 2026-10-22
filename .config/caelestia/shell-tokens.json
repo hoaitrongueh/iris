@@ -1,0 +1,49 @@
+{
+  "sizes": {
+    "bar": {
+      "innerWidth": 26,
+      "audioWidth": 260,
+      "networkWidth": 260,
+      "batteryWidth": 220
+    },
+    "launcher": {
+      "itemWidth": 400,
+      "itemHeight": 42
+    },
+    "dashboard": {
+      "userWidth": 240,
+      "weatherWidth": 215,
+      "dateTimeWidth": 72,
+      "mediaWidth": 148,
+      "logoSize": 22,
+      "uptimeSize": 22,
+      "mediaCoverArtSize": 140,
+      "mediaTabWidth": 740,
+      "mediaTabHeight": 220,
+      "mediaSectionWidth": 220,
+      "resourceProgressThickness": 3,
+      "perfHeroCardWidth": 290,
+      "perfUsageShapeSize": 64,
+      "perfStorageTextWidth": 122,
+      "perfNetworkCardWidth": 270,
+      "perfNetworkCardHeight": 150,
+      "perfBattWidth": 95,
+      "perfBattHeight": 110
+    },
+    "osd": {
+      "sliderWidth": 24,
+      "sliderHeight": 94
+    },
+    "sidebar": {
+      "width": 320
+    },
+    "notifs": {
+      "width": 320,
+      "image": 32
+    },
+    "utilities": {
+      "width": 320,
+      "toastWidth": 320
+    }
+  }
+}

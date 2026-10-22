@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+"""Run from a graphical terminal: reload safely, open Kitty, collect live evidence."""
+from datetime import datetime
+import json
+from pathlib import Path
+import subprocess
+import sys
+import time
+
+home = Path.home()
+out = home / 'arch-setup/rice/live' / datetime.now().strftime('%Y%m%d-%H%M%S')
+out.mkdir(parents=True, exist_ok=True)
+
+def run(name, args):
+    r = subprocess.run(args, capture_output=True, text=True, timeout=15)
+    (out / name).write_text(r.stdout + '\n' + r.stderr)
+    return r
+
+check = run('validation.txt', ['Hyprland', '--verify-config', '-c', str(home / '.config/hypr/hyprland.lua')])
+if check.returncode or 'config ok' not in check.stdout:
+    sys.exit(f'Configuration validation failed. See {out}')
+mon = run('monitors.json', ['hyprctl', '-j', 'monitors'])
+try:
+    assert mon.returncode == 0 and json.loads(mon.stdout)
+except (ValueError, AssertionError):
+    sys.exit(f'Live compositor access unavailable. No windows were opened. See {out}')
+r = run('reload.txt', ['hyprctl', 'reload', 'config-only'])
+if r.returncode:
+    sys.exit(f'Reload failed. See {out}')
+time.sleep(.5)
+errors = run('configerrors.txt', ['hyprctl', 'configerrors'])
+if errors.returncode or errors.stdout.strip():
+    sys.exit(f'Compositor reported errors. See {out}')
+run('before.json', ['hyprctl', '-j', 'clients'])
+run('wallpaper.txt', ['qs', '-c', 'caelestia', 'ipc', 'call', 'wallpaper', 'get'])
+for opt in ['decoration.active_opacity', 'decoration.inactive_opacity', 'decoration.blur.enabled',
+            'decoration.blur.size', 'decoration.blur.passes']:
+    run(opt + '.txt', ['hyprctl', 'getoption', opt])
+log = (out / 'kitty-launch.txt').open('w')
+subprocess.Popen(['kitty', '--config', str(home / '.config/kitty/kitty.conf'),
+                  '--class', 'workstation-presentation', '--title', 'Glass · presentation'],
+                 stdout=log, stderr=log, start_new_session=True)
+log.close()
+time.sleep(2)
+run('after.json', ['hyprctl', '-j', 'clients'])
+run('layers.json', ['hyprctl', '-j', 'layers'])
+capture = run('capture.txt', ['grim', str(out / 'desktop.png')])
+print(f'Live evidence saved to {out}')
+if capture.returncode:
+    print('Screenshot failed; live visual acceptance remains unverified.')
+else:
+    print('Inspect desktop.png for wallpaper visibility through Kitty and readable text.')
+print('Check left-edge hover, Super+Space, Super+Shift+V twice, Alt+Tab, and Print shortcuts.')
+print('A captured screenshot alone does not establish visual acceptance.')

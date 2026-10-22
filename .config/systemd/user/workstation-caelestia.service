@@ -1,0 +1,13 @@
+[Unit]
+Description=Caelestia primary desktop shell with installed GTK icon-theme integration
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Environment=QT_QPA_PLATFORMTHEME=gtk3
+ExecStart=/usr/bin/qs -c caelestia -n
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""Select an original wallpaper through Caelestia's native watched state file."""
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+profiles = {'A': 'monochrome-marble.png', 'B': 'atmospheric-architecture.png'}
+profile = sys.argv[1].upper() if len(sys.argv) == 2 else ''
+if profile not in profiles:
+    sys.exit('Usage: workstation-wallpaper A|B')
+wall = Path.home() / 'Pictures/Wallpapers' / profiles[profile]
+if not wall.is_file():
+    sys.exit(f'Missing wallpaper: {wall}')
+state = Path(os.environ.get('XDG_STATE_HOME', str(Path.home() / '.local/state')))
+target = state / 'caelestia/wallpaper/path.txt'
+target.parent.mkdir(parents=True, exist_ok=True)
+
+with tempfile.NamedTemporaryFile(mode='w', dir=target.parent, delete=False) as f:
+    f.write(str(wall) + '\n')
+    f.flush()
+    os.fsync(f.fileno())
+    temp = f.name
+os.replace(temp, target)
+print(f'Profile {profile} selected: {wall}')
+try:
+    r = subprocess.run(['qs', '-c', 'caelestia', 'ipc', 'call', 'wallpaper', 'get'],
+                       capture_output=True, text=True, timeout=4)
+    if r.returncode == 0 and r.stdout.strip() == str(wall):
+        print('Caelestia reports this path. Visual confirmation is still required.')
+    else:
+        print('Selection saved; live Caelestia confirmation unavailable or still pending.')
+except (OSError, subprocess.TimeoutExpired):
+    print('Selection saved; live Caelestia confirmation unavailable.')

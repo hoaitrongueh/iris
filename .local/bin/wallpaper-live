@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""Managed mpvpaper playback; never hide Caelestia's fallback before video decodes."""
+from pathlib import Path
+import datetime
+import json
+import os
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+import time
+
+HOME = Path.home()
+VIDEO = HOME/'Pictures/Wallpapers/Live/eerie-moon-outlast-2-moewalls-com.mp4'
+CONFIG = HOME/'.config/caelestia/shell.json'
+STATE = HOME/'.local/state/workstation-live'
+UNIT = 'workstation-live-wallpaper.service'
+
+def atomic(path, text):
+    temp = path.with_name(path.name + '.tmp')
+    temp.write_text(text)
+    os.replace(temp, path)
+
+def ipc(command):
+    address = Path(os.environ.get('XDG_RUNTIME_DIR', f'/run/user/{os.getuid()}'))/'workstation-live/mpv.sock'
+    with socket.socket(socket.AF_UNIX) as connection:
+        connection.settimeout(2)
+        connection.connect(str(address))
+        connection.sendall((json.dumps({'command': command, 'request_id': 1})+'\n').encode())
+        with connection.makefile() as reader:
+            for line in reader:
+                value = json.loads(line)
+                if value.get('request_id') == 1:
+                    if value.get('error') != 'success':
+                        raise RuntimeError(str(value))
+                    return value.get('data')
+    raise RuntimeError('No reply from wallpaper player')
+
+def fallback():
+    marker = STATE/'fallback.json'
+    if marker.exists():
+        old = json.loads(marker.read_text())
+        config = json.loads(CONFIG.read_text())
+        config.setdefault('background', {})['wallpaperEnabled'] = old['wallpaperEnabled']
+        atomic(CONFIG, json.dumps(config, indent=2)+'\n')
+        marker.unlink()
+
+def preflight():
+    if not shutil.which('mpvpaper'):
+        raise RuntimeError('mpvpaper is not installed. Install AUR mpvpaper after reviewing its PKGBUILD.')
+    if not VIDEO.is_file():
+        raise RuntimeError(f'Exact video missing: {VIDEO}')
+    subprocess.run(['hyprctl', '-j', 'monitors'], check=True, capture_output=True, timeout=4)
+    helptext = subprocess.check_output(['mpvpaper', '--help'], text=True, timeout=4)
+    if '--auto-mode' not in helptext:
+        raise RuntimeError('mpvpaper with --auto-mode is required for the configured fullscreen policy.')
+
+def run():
+    preflight()
+    STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
+
+    fallback()
+    runtime = Path(os.environ['XDG_RUNTIME_DIR'])/'workstation-live'
+    runtime.mkdir(mode=0o700, exist_ok=True)
+    endpoint = runtime/'mpv.sock'
+    endpoint.unlink(missing_ok=True)
+
+    options = f'config=no no-audio loop-file=inf hwdec=auto panscan=1 terminal=no input-ipc-server={endpoint}'
+    player = subprocess.Popen(['mpvpaper', '--auto-pause', '--auto-mode', 'FULL', '-o', options, 'eDP-1', str(VIDEO)])
+    def stop(*_):
+        raise SystemExit(0)
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+    try:
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            if player.poll() is not None:
+                raise RuntimeError('mpvpaper exited before video startup')
+            try:
+
+                if ipc(['get_property', 'estimated-frame-number']) >= 1:
+                    break
+            except (OSError, RuntimeError, TypeError):
+                pass
+            time.sleep(0.2)
+        else:
+            raise RuntimeError('No decoded video frame within 20s; retaining static wallpaper')
+        config = json.loads(CONFIG.read_text())
+        original = config.setdefault('background', {}).get('wallpaperEnabled', True)
+        stamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')
+        shutil.copy2(CONFIG, STATE/('shell-'+stamp+'.json'))
+        atomic(STATE/'fallback.json', json.dumps({'wallpaperEnabled': original})+'\n')
+        config['background']['wallpaperEnabled'] = False
+        atomic(CONFIG, json.dumps(config, indent=2)+'\n')
+        print('Video decoder ready; Caelestia static surface released.', flush=True)
+        code = player.wait()
+        if code:
+            raise RuntimeError(f'mpvpaper exited {code}')
+    finally:
+        if player.poll() is None:
+            player.terminate()
+            try:
+                player.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                player.kill()
+                player.wait()
+        fallback()
+
+def main():
+    action = sys.argv[1] if len(sys.argv) == 2 else 'status'
+    if action == '_run':
+        run()
+    elif action == '_fallback':
+        fallback()
+    elif action in ('start', 'restore'):
+        preflight()
+
+        managed = subprocess.run(['systemctl', '--user', 'is-active', '--quiet', UNIT]).returncode == 0
+        if not managed and subprocess.run(['pgrep', '-x', 'mpvpaper'], capture_output=True).returncode == 0:
+            raise RuntimeError('An unmanaged mpvpaper is already running; inspect it before starting this service.')
+        subprocess.run(['systemctl', '--user', 'daemon-reload'], check=True)
+        subprocess.run(['systemctl', '--user', 'enable', '--now', UNIT], check=True)
+    elif action in ('stop', 'static'):
+        subprocess.run(['systemctl', '--user', 'disable', '--now', UNIT], check=True)
+        fallback()
+    elif action in ('pause', 'resume'):
+        ipc(['set_property', 'pause', action == 'pause'])
+    elif action == 'status':
+        subprocess.run(['systemctl', '--user', 'status', '--no-pager', UNIT], check=True)
+    else:
+        raise RuntimeError('Use wallpaper-live start|stop|pause|resume|static|restore|status')
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+        sys.exit(str(error))

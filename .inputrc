@@ -1,0 +1,10 @@
+set editing-mode emacs
+set completion-ignore-case on
+set show-all-if-ambiguous on
+"\e[A": history-search-backward
+"\e[B": history-search-forward
+"\C-r": reverse-search-history
+"\C-f": forward-char
+"\C-b": backward-char
+"\C-a": beginning-of-line
+"\C-e": end-of-line
