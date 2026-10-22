@@ -10,10 +10,14 @@ def dispatch(code):
     if result.stdout.strip()!='ok': raise RuntimeError(result.stdout.strip())
 def windows(role): return [c for c in query('clients') if c['class']==role]
 action=sys.argv[1] if len(sys.argv)>1 else 'toggle'
+if action == 'position':
+    if len(sys.argv) != 3 or sys.argv[2] not in ('top', 'bottom'):
+        raise SystemExit('Use iris-dashboard position top|bottom')
+    os.execvp('qs',['qs','-c','caelestia','ipc','call','irisDashboard','position',sys.argv[2]])
 commands={'toggle':['toggle'],'show':['show'],'hide':['hide'],'clock':['tab','0'],'identity':['tab','2'],'status':['status']}
 if action in commands:
     os.execvp('qs',['qs','-c','caelestia','ipc','call','irisDashboard',*commands[action]])
-if action != 'scratch': raise SystemExit('Use toggle|show|hide|clock|identity|scratch|status')
+if action != 'scratch': raise SystemExit('Use toggle|show|hide|clock|identity|scratch|status|position top|bottom')
 subprocess.run(['qs','-c','caelestia','ipc','call','irisDashboard','hide'],check=True)
 with open(Path(os.environ['XDG_RUNTIME_DIR'])/'iris-dashboard.lock','w') as lock:
     fcntl.flock(lock,fcntl.LOCK_EX)

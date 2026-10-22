@@ -32,7 +32,8 @@ Item {
     property real offsetScale: shouldBeActive ? 0 : 1
 
     visible: offsetScale < 1
-    anchors.topMargin: (-implicitHeight - 5) * offsetScale
+    readonly property real openTop: screenState.dashboardPosition === "bottom" ? Math.max(0, parent.height - implicitHeight - 24) : 0
+    anchors.topMargin: openTop - (openTop + implicitHeight + 5) * offsetScale
     implicitHeight: content.implicitHeight
     implicitWidth: content.implicitWidth || 854 // Hard coded fallback for first open
     opacity: 1 - offsetScale

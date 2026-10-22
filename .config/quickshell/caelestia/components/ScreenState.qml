@@ -14,5 +14,6 @@ PersistentProperties {
 
     // Dashboard state
     property int dashboardTab
+    property string dashboardPosition: "top"
     property date dashboardDate: new Date()
 }

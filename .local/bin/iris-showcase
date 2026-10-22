@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""Opt-in, live terminal composition. Ordinary terminal startup stays unchanged."""
+import argparse
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+ROOT = Path(__file__).resolve().parents[2]
+PREFIX = "iris-showcase-"
+
+
+def run(*args):
+    return subprocess.check_output(args, text=True).strip()
+
+
+def shell():
+    os.environ["PS1"] = r"\[\e[90m\]\u\[\e[0m\]  \$ "
+    os.execvp("bash", ["bash", "--noprofile", "--norc", "-i"])
+
+
+def pane(role, repo, ready):
+    os.chdir(repo)
+    deadline = time.monotonic() + 15
+    while not ready.exists():
+        if time.monotonic() > deadline:
+            raise SystemExit("Showcase layout did not become ready.")
+        time.sleep(0.05)
+    # Wait for Kitty to acknowledge the compositor's final configure event.
+    previous = None
+    while time.monotonic() < deadline:
+        size = os.get_terminal_size()
+        if size == previous:
+            break
+        previous = size
+        time.sleep(0.15)
+    (ready.parent / role).touch()
+    if role == "monitor":
+        # btop saves preferences on exit; keep the checked-in preset pristine.
+        with tempfile.TemporaryDirectory(prefix="iris-btop-") as directory:
+            config = Path(directory) / "btop.conf"
+            shutil.copy2(ROOT / ".config/iris/showcase/btop.conf", config)
+            subprocess.run(["btop", "--config", str(config)], check=True)
+        return
+    print("\033[2J\033[H", end="", flush=True)
+    if role == "identity":
+        subprocess.run(["fastfetch", "--config", str(ROOT / ".config/iris/fastfetch.json")], check=True)
+    else:
+        print("\033[1;37miris / dotfiles\033[0m\n", flush=True)
+        subprocess.run(["tree", "-a", "--noreport", "--dirsfirst", "-L", "1",
+                        ".config/hypr", ".config/iris"], check=True)
+    print()
+    shell()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("repo", nargs="?", type=Path, default=ROOT)
+    parser.add_argument("--pane", choices=("identity", "tree", "monitor"), help=argparse.SUPPRESS)
+    parser.add_argument("--ready", type=Path, help=argparse.SUPPRESS)
+    args = parser.parse_args()
+    repo = args.repo.resolve()
+    if args.pane:
+        pane(args.pane, repo, args.ready)
+        return
+    for command in ("kitty", "hyprctl", "fastfetch", "tree", "btop"):
+        if not shutil.which(command):
+            parser.error(f"Required tool is missing: {command}")
+    if not (repo / ".config/hypr").is_dir():
+        parser.error("Choose the iris dotfiles repository.")
+    clients = json.loads(run("hyprctl", "-j", "clients"))
+    if any(c["class"].startswith(PREFIX) for c in clients):
+        parser.error("Close the existing showcase terminals before opening another set.")
+    monitor = next(m for m in json.loads(run("hyprctl", "-j", "monitors")) if m["focused"])
+    width, height = monitor["width"] / monitor["scale"], monitor["height"] / monitor["scale"]
+    if width < 1200 or height < 720:
+        parser.error("This composition needs at least 1200 × 720 logical pixels.")
+    run("hyprctl", "eval", "iris_leave_dashboard()")
+    # Keep the upper centre clear for the moon; panels have separate jobs.
+    layout = {"identity": (0.035, 0.075, 0.43, 0.38),
+              "tree": (0.035, 0.49, 0.34, 0.44),
+              "monitor": (0.405, 0.47, 0.56, 0.47)}
+    # Files contain only a readiness signal, never captured user data.
+    ready_dir = tempfile.mkdtemp(prefix="iris-showcase-", dir=os.environ.get("XDG_RUNTIME_DIR"))
+    ready = Path(ready_dir) / "ready"
+    for role, (x, y, w, h) in layout.items():
+        run("hyprctl", "eval", f'hl.window_rule({{name="iris-showcase-{role}",match={{class="^{PREFIX}{role}$"}},float=true,size="{int(width*w)} {int(height*h)}",move="{int(width*x)} {int(height*y)}"}})')
+        subprocess.Popen(["kitty", "--class", PREFIX + role, "--title", "iris / " + role,
+                          "--override", "font_size=10", "--override", "window_padding_width=14",
+                          "--override", "background_opacity=0.72", sys.executable,
+                          str(Path(__file__).resolve()), str(repo), "--pane", role, "--ready", str(ready)],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+    deadline = time.monotonic() + 12
+    while True:
+        clients = json.loads(run("hyprctl", "-j", "clients"))
+        windows = {c["class"][len(PREFIX):]: c for c in clients if c["class"].startswith(PREFIX)}
+        if all(role in windows for role in layout):
+            break
+        if time.monotonic() > deadline:
+            raise SystemExit("Showcase startup timed out; inspect the opened terminals.")
+        time.sleep(0.1)
+    for role, (x, y, w, h) in layout.items():
+        address = windows[role]["address"]
+        lua = (f'local w=hl.get_window("address:{address}"); '
+               'if not w.floating then hl.dispatch(hl.dsp.window.float({window=w,action="toggle"})) end; '
+               f'hl.dispatch(hl.dsp.window.resize({{window=w,x={int(width*w)},y={int(height*h)},relative=false}})); '
+               f'hl.dispatch(hl.dsp.window.move({{window=w,x={monitor["x"]+int(width*x)},y={monitor["y"]+int(height*y)},relative=false}}))')
+        run("hyprctl", "eval", lua)
+    ready.touch()
+    deadline = time.monotonic() + 15
+    while not all((ready.parent / role).exists() for role in layout):
+        if time.monotonic() > deadline:
+            raise SystemExit("Showcase panes did not acknowledge their layout.")
+        time.sleep(0.05)
+    shutil.rmtree(ready_dir)
+
+
+if __name__ == "__main__":
+    main()

@@ -31,10 +31,15 @@ ShellRoot {
         function show(): void { const s = ShellState.forActive(); if (s) s.dashboard = true; }
         function hide(): void { const s = ShellState.forActive(); if (s) s.dashboard = false; }
         function toggle(): void { const s = ShellState.forActive(); if (s) s.dashboard = !s.dashboard; }
+        function position(edge: string): void {
+            if (edge !== "top" && edge !== "bottom") return;
+            const s = ShellState.forActive();
+            if (s) s.dashboardPosition = edge;
+        }
         function status(): string {
             const state = ShellState.forActive();
             if (!state) return "{}";
-            return JSON.stringify({open: state.dashboard, tab: state.dashboardTab, playing: Players.active?.isPlaying ?? false, bins: Audio.cava.values.length, peak: Math.max(0, ...Audio.cava.values)});
+            return JSON.stringify({open: state.dashboard, tab: state.dashboardTab, position: state.dashboardPosition, playing: Players.active?.isPlaying ?? false, bins: Audio.cava.values.length, peak: Math.max(0, ...Audio.cava.values)});
         }
     }
     GSFLoader {}
