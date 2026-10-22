@@ -12,7 +12,9 @@ import sys
 import time
 
 HOME = Path.home()
-VIDEO = HOME/'Pictures/Wallpapers/Live/eerie-moon-outlast-2-moewalls-com.mp4'
+SOURCE = HOME/'Pictures/Wallpapers/Live/eerie-moon-outlast-2-moewalls-com.mp4'
+OPTIMIZED = HOME/'.cache/iris/wallpaper/eerie-moon-1920x1080-30.mp4'
+VIDEO = OPTIMIZED if OPTIMIZED.is_file() else SOURCE
 CONFIG = HOME/'.config/caelestia/shell.json'
 STATE = HOME/'.local/state/workstation-live'
 UNIT = 'workstation-live-wallpaper.service'
@@ -59,13 +61,14 @@ def preflight():
 def run():
     preflight()
     STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
-
+    # Recover the fallback after a previous killed run before saving its state.
     fallback()
     runtime = Path(os.environ['XDG_RUNTIME_DIR'])/'workstation-live'
     runtime.mkdir(mode=0o700, exist_ok=True)
     endpoint = runtime/'mpv.sock'
     endpoint.unlink(missing_ok=True)
-
+    # No fork: systemd owns the complete process group and prevents duplicates.
+    # Keep the video's aspect ratio with centered crop; no filters or upscaling.
     options = f'config=no no-audio loop-file=inf hwdec=auto panscan=1 terminal=no input-ipc-server={endpoint}'
     player = subprocess.Popen(['mpvpaper', '--auto-pause', '--auto-mode', 'FULL', '-o', options, 'eDP-1', str(VIDEO)])
     def stop(*_):
@@ -78,7 +81,8 @@ def run():
             if player.poll() is not None:
                 raise RuntimeError('mpvpaper exited before video startup')
             try:
-
+                # A positive frame count proves decoding even if a fullscreen
+                # application has already auto-paused the player.
                 if ipc(['get_property', 'estimated-frame-number']) >= 1:
                     break
             except (OSError, RuntimeError, TypeError):
@@ -99,12 +103,16 @@ def run():
             raise RuntimeError(f'mpvpaper exited {code}')
     finally:
         if player.poll() is None:
-            player.terminate()
             try:
+                ipc(['quit'])
                 player.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                player.kill()
-                player.wait()
+            except (OSError, RuntimeError, subprocess.TimeoutExpired):
+                player.terminate()
+                try:
+                    player.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    player.kill()
+                    player.wait()
         fallback()
 
 def main():
@@ -115,7 +123,7 @@ def main():
         fallback()
     elif action in ('start', 'restore'):
         preflight()
-
+        # Refuse to add a second unmanaged video renderer.
         managed = subprocess.run(['systemctl', '--user', 'is-active', '--quiet', UNIT]).returncode == 0
         if not managed and subprocess.run(['pgrep', '-x', 'mpvpaper'], capture_output=True).returncode == 0:
             raise RuntimeError('An unmanaged mpvpaper is already running; inspect it before starting this service.')

@@ -1,3 +1,4 @@
+# Small Bash additions. Optional utilities activate only when installed.
 alias ll='ls -lah'
 alias cxx='c++'
 alias ..='cd ..'
@@ -11,7 +12,7 @@ project() {
         *) printf 'Use project HAND, RELIC, or PRISM\n' >&2; return 2 ;;
     esac
 }
-
+# Git's packaged prompt only inspects the current repository when drawing a prompt.
 if [[ -r /usr/share/git/completion/git-prompt.sh ]]; then
     source /usr/share/git/completion/git-prompt.sh
     GIT_PS1_SHOWDIRTYSTATE=1
@@ -23,7 +24,7 @@ if command -v fzf >/dev/null; then
     [[ -r /usr/share/fzf/key-bindings.bash ]] && source /usr/share/fzf/key-bindings.bash
 fi
 if command -v eza >/dev/null; then alias ll='eza -lah --group-directories-first'; fi
-
+# Terminal file navigation: select a directory, or use ordinary cd without fzf.
 cdir() {
     command -v fzf >/dev/null || { printf 'fzf is not installed\n' >&2; return 1; }
     local selected

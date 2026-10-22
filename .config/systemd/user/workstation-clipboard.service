@@ -8,3 +8,5 @@ ConditionEnvironment=WAYLAND_DISPLAY
 ExecStart=/usr/bin/wl-paste --watch /usr/bin/cliphist store
 Restart=on-failure
 RestartSec=3
+
+# Started by workstation-session only; no independent login activation.

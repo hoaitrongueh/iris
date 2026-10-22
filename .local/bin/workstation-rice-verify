@@ -11,10 +11,12 @@ home = Path.home()
 out = home / 'arch-setup/rice/live' / datetime.now().strftime('%Y%m%d-%H%M%S')
 out.mkdir(parents=True, exist_ok=True)
 
+
 def run(name, args):
     r = subprocess.run(args, capture_output=True, text=True, timeout=15)
     (out / name).write_text(r.stdout + '\n' + r.stderr)
     return r
+
 
 check = run('validation.txt', ['Hyprland', '--verify-config', '-c', str(home / '.config/hypr/hyprland.lua')])
 if check.returncode or 'config ok' not in check.stdout:

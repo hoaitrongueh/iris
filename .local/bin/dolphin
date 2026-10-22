@@ -1,4 +1,4 @@
 #!/bin/sh
-
+# Installed GTK integration supplies the shared icon theme; KDE selects Graphite.
 export QT_QPA_PLATFORMTHEME=gtk3
 exec /usr/bin/dolphin "$@"

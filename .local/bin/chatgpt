@@ -1,5 +1,6 @@
 #!/bin/sh
-
+# Use the packaged application and existing profile. Explicit backend arguments win.
+# X11-only sessions retain the vendor launch behavior.
 for arg do
     case "$arg" in
         --ozone-platform|--ozone-platform=*) exec /usr/bin/chatgpt "$@" ;;

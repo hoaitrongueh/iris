@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-
+# Called once by Hyprland. No system packages, session termination or reboot.
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 command -v caelestia >/dev/null || {
-
+    # Preserve the previous working notification setup until packages exist.
     systemctl --user start dunst.service
     exit 0
 }
@@ -12,7 +12,7 @@ mkdir -p "$HOME/.local/state/caelestia"
 exec 9>"$HOME/.local/state/caelestia/session-start.lock"
 flock -n 9 || exit 0
 "$HOME/.local/bin/workstation-monochrome"
-
+# Dunst must release the notification bus before the upstream shell starts.
 systemctl --user stop dunst.service
 if ! systemctl --user start workstation-caelestia.service 9>&-; then
     systemctl --user start dunst.service

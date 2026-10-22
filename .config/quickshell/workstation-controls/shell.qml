@@ -1,3 +1,4 @@
+//@ pragma DefaultEnv QS_NO_RELOAD_POPUP=1
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -40,7 +41,7 @@ ShellRoot {
         function onMutedChanged(): void { root.show(); }
     }
     Timer {
-        interval: 280; repeat: true; running: true
+        interval: 2000; repeat: true; running: true
         onTriggered: { if (!brightnessPoll.running) brightnessPoll.running = true; }
     }
     Process {
@@ -69,8 +70,8 @@ ShellRoot {
         id: panel
         anchors.right: true
         anchors.top: true
-        margins.right: 15
-        margins.top: 14
+        margins.right: 68
+        margins.top: 4
         implicitWidth: 294
         implicitHeight: 92
         exclusiveZone: 0

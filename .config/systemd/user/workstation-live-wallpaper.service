@@ -10,7 +10,7 @@ ExecStart=%h/.local/bin/wallpaper-live _run
 ExecStopPost=%h/.local/bin/wallpaper-live _fallback
 Restart=no
 TimeoutStopSec=10
-KillMode=control-group
+KillMode=mixed
 
 [Install]
 WantedBy=graphical-session.target

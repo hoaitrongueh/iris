@@ -4,11 +4,13 @@ import json
 import subprocess
 import sys
 
+
 def query(name):
     r = subprocess.run(['hyprctl', '-j', name], capture_output=True, text=True, timeout=5)
     if r.returncode:
         raise RuntimeError(r.stderr.strip() or r.stdout.strip() or 'Hyprland IPC unavailable')
     return json.loads(r.stdout)
+
 
 def main():
     w = query('activewindow')
@@ -21,7 +23,7 @@ def main():
     if m.get('transform', 0) % 2:
         width, height = height, width
     width, height = round(width / m['scale'] * .65), round(height / m['scale'] * .65)
-
+    # Recheck focus inside one compositor evaluation; never resize a different window.
     code = ('local w=hl.get_active_window(); if w and w.address==' + json.dumps(w['address'])
             + ' then hl.dispatch(hl.dsp.window.float({action="toggle"})); ')
     if not w['floating']:
@@ -31,6 +33,7 @@ def main():
     r = subprocess.run(['hyprctl', 'eval', code], capture_output=True, text=True, timeout=5)
     if r.returncode or (r.stdout.strip() and r.stdout.strip() != 'ok'):
         raise RuntimeError(r.stderr.strip() or r.stdout.strip())
+
 
 if __name__ == '__main__':
     try:

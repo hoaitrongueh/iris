@@ -1,3 +1,5 @@
+// Repair: stock searchable new-tab/home, native sidebar layout; no custom CSS.
+// Iris: appearance only. Native Zen vertical tabs remain the default.
 user_pref("ui.systemUsesDarkTheme", 1);
 user_pref("browser.theme.toolbar-theme", 0);
 user_pref("browser.theme.content-theme", 0);
@@ -6,8 +8,11 @@ user_pref("browser.startup.homepage", "about:home");
 user_pref("browser.newtabpage.enabled", true);
 user_pref("zen.view.show-background-tab-toast", false);
 
+// BEGIN IRIS NATIVE GLASS — supported by the installed Zen 1.23.2b resources.
+// Native chrome alpha; keep web content opaque and compositor opacity at 1.0.
 user_pref("zen.widget.linux.transparency", true);
 user_pref("browser.tabs.allow_transparent_browser", false);
+// END IRIS NATIVE GLASS
 
 user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", false);
 

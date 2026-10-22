@@ -1,5 +1,3 @@
 # iris
 
-My Arch Linux setup: Hyprland, Caelestia, Kitty, Zen, and a monochrome glass desktop.
-
-Dotfiles mirror my home directory; package lists live in `packages/`. Paths target `/home/iris`, with `eDP-1` at 1.5× scaling. Run `bash restore-wallpaper.sh` to join the video wallpaper.
+My Arch Linux desktop with Hyprland, a customized Caelestia shell, Kitty, and Zen. Monochrome glass, floating terminals, a compact application rail, and an eerie moon live wallpaper.

@@ -1,9 +1,3 @@
 #!/usr/bin/env bash
-# Explicit GUI launch only. Debug normally by running the original command.
-set -euo pipefail
-if (( $# == 0 )); then
-    printf 'Usage: iris-app COMMAND_OR_DESKTOP_ID [ARGUMENT ...]\nLogs: journalctl --user -b -g iris\n' >&2
-    exit 2
-fi
-hyprctl eval 'iris_leave_dashboard()' >/dev/null
-exec uwsm app -t service -a iris -p StandardOutput=journal -p StandardError=journal -- "$@"
+# Compatibility for existing launchers.
+exec "$HOME/.local/bin/iris" "$@"

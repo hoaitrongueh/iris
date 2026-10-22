@@ -1,3 +1,4 @@
+-- Iris workflow. Loaded after the preserved desktop configuration.
 local home = os.getenv('HOME')
 hl.bind('SUPER + Q', hl.dsp.window.close())
 hl.bind('SUPER + C', hl.dsp.exec_cmd('caelestia clipboard'))
@@ -11,7 +12,7 @@ for key, direction in pairs({H='left', J='down', K='up', L='right'}) do
     hl.bind('SUPER + ' .. key, hl.dsp.focus({direction = direction}))
     hl.bind('SUPER + SHIFT + ' .. key, hl.dsp.window.move({direction = direction}))
 end
-
+-- Keep existing fractional laptop scaling; hotplug outputs use preferred modes.
 hl.monitor({output = '', mode = 'preferred', position = 'auto', scale = 1})
 hl.workspace_rule({workspace = 'w[tv1]', gaps_out = 0, gaps_in = 0})
 hl.config({input = {repeat_rate = 35, repeat_delay = 300, touchpad = {tap_to_click = true}}})

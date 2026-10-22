@@ -7,15 +7,7 @@ local function bind(key, command)
 end
 -- Hot path stays inside the compositor until systemd starts Kitty.
 function iris_leave_dashboard()
-    local special=hl.get_active_special_workspace()
-    if special and special.name == "special:iris" then
-        hl.dispatch(hl.dsp.workspace.toggle_special("iris"))
-    end
-    for _,w in ipairs(hl.get_windows()) do
-        if w.class == "iris-dashboard" or w.class == "iris-clock" or w.class == "iris-identity" then
-            hl.dispatch(hl.dsp.window.close({window=w}))
-        end
-    end
+    hl.exec_cmd(bin .. "iris-dashboard hide")
 end
 function iris_open_terminal(role)
     iris_leave_dashboard()
@@ -27,10 +19,10 @@ hl.bind("SUPER + Return", function() iris_open_terminal("float") end)
 hl.bind("SUPER + SHIFT + Return", function() iris_open_terminal("tile") end)
 bind("SUPER + space", bin .. "iris-launcher")
 bind("SUPER + R", bin .. "iris-launcher")
-bind("SUPER + W", bin .. "iris-app workstation-zen")
-bind("SUPER + D", bin .. "iris-app workstation-editor")
-bind("SUPER + E", bin .. "iris-app dolphin")
-bind("SUPER + CTRL + P", bin .. "iris-app spotify-launcher")
+bind("SUPER + W", bin .. "iris workstation-zen")
+bind("SUPER + D", bin .. "iris workstation-editor")
+bind("SUPER + E", bin .. "iris dolphin")
+bind("SUPER + CTRL + P", bin .. "iris spotify-launcher")
 bind("SUPER + S", bin .. "iris-terminal scratch")
 bind("SUPER + G", bin .. "iris-dashboard toggle")
 bind("SUPER + SHIFT + G", bin .. "iris-dashboard clock")
@@ -65,16 +57,9 @@ hl.window_rule({name="iris-tiled-terminal",match={class="^iris-tile$"},float=fal
 hl.window_rule({name="iris-terminal-glass",match={class="^iris-.*$"},
     opacity="1.0 override 1.0 override",opaque=false,no_blur=false,rounding=12})
 hl.window_rule({name="iris-scratch-workspace",match={class="^iris-scratch$"},workspace="special:magic silent"})
-hl.window_rule({name="iris-system-panel",match={class="^iris-dashboard$"},
-    float=true,size="540 330",move="36 68",workspace="special:iris silent",no_initial_focus=true})
-hl.window_rule({name="iris-clock-panel",match={class="^iris-clock$"},
-    float=true,size="260 140",move="monitor_w-300 68",workspace="special:iris silent",no_initial_focus=true})
-hl.window_rule({name="iris-identity-panel",match={class="^iris-identity$"},
-    float=true,size="290 200",move="monitor_w-330 monitor_h-248",workspace="special:iris silent",no_initial_focus=true})
 -- Current workspace stays available for editor/browser/terminal development.
 hl.window_rule({name="iris-music-workspace",match={class="^(Spotify|spotify)$"},workspace="8 silent"})
 hl.layer_rule({name="iris-launcher-glass",match={namespace="^launcher$"},blur=true,ignore_alpha=0.05})
-hl.on("hyprland.start", function() hl.exec_cmd(bin .. "iris-dashboard show") end)
 
 -- Fast subtle opening, still animated. No launch delays or resident prewarming.
 hl.animation({leaf="windowsIn",enabled=true,speed=1.2,bezier="easeOutQuint",style="popin 98%"})
@@ -140,3 +125,14 @@ function iris_tidy_terminals()
 end
 hl.unbind("SUPER + CTRL + Return")
 hl.bind("SUPER + CTRL + Return", iris_tidy_terminals)
+
+-- Floating IRIS panels share the existing single-pass compositor blur.
+hl.layer_rule({name="iris-shell-glass",match={namespace="^iris-(topbar|rail)$"},blur=true,ignore_alpha=0.05})
+
+-- Print captures the visible frame immediately, including hover panels.
+-- Cropped captures select from frozen pixels; lock captures render the lock UI.
+for _, key in ipairs({"Print", "CTRL + Print", "SHIFT + Print", "SUPER + SHIFT + S"}) do hl.unbind(key) end
+hl.bind("Print", hl.dsp.exec_cmd(bin .. "workstation-screenshot region"), {locked=true})
+hl.bind("CTRL + Print", hl.dsp.exec_cmd(bin .. "workstation-screenshot full"), {locked=true})
+hl.bind("SHIFT + Print", hl.dsp.exec_cmd(bin .. "workstation-screenshot annotate"), {locked=true})
+hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd(bin .. "workstation-screenshot region"), {locked=true})

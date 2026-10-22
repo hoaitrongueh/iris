@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-
+# Existing installation only. Never create containers or alter licensing.
 set -euo pipefail
 matlab="$HOME/MATLAB/R2026b/bin/matlab"
 [[ -x "$matlab" ]] || { echo 'Existing MATLAB R2026b executable missing.' >&2; exit 1; }
-
+# Keep MATLAB on its tested toolkit theme even when launched from Caelestia.
 unset QT_QPA_PLATFORMTHEME
 export QT_QPA_PLATFORM=xcb
 export XDG_DATA_DIRS="${XDG_DATA_DIRS:-/usr/local/share:/usr/share}:/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share"
-
+# Native Arch licensing startup crashes; the existing Ubuntu environment passed
+# arithmetic and Simulink simulation. Keep --native for explicit diagnostics.
 backend=container
 if [[ ${1:-} == --native ]]; then backend=native; shift; fi
 run_matlab() {
@@ -22,7 +23,7 @@ case "$mode" in
         run_matlab -batch "assert(isequal(eye(2)*[1;2],[1;2])); disp('MATLAB_BASIC_OK'); disp(version); ver('simulink');"
         ;;
     --simulink-check)
-
+        # Keep generated simulation files out of the coursework directory.
         scratch=$(mktemp -d "$HOME/.cache/matlab-smoke-XXXXXXXX")
         cd "$scratch"
         run_matlab -batch "p=fullfile(getenv('HOME'),'matlab-class-test','robotics_class_smoke_test.slx'); assert(isfile(p)); load_system(p); sim('robotics_class_smoke_test'); close_system('robotics_class_smoke_test',0); disp('SIMULINK_SMOKE_OK');"

@@ -16,7 +16,7 @@ if not wall.is_file():
 state = Path(os.environ.get('XDG_STATE_HOME', str(Path.home() / '.local/state')))
 target = state / 'caelestia/wallpaper/path.txt'
 target.parent.mkdir(parents=True, exist_ok=True)
-
+# The shell watches this file; selection does not invoke a theme generator.
 with tempfile.NamedTemporaryFile(mode='w', dir=target.parent, delete=False) as f:
     f.write(str(wall) + '\n')
     f.flush()

@@ -1,45 +1,138 @@
 #!/usr/bin/env python3
-"""Wayland snipping using the tools already required by Caelestia.
-
-One-shot helper, no daemon and no temporary screenshot files. A cancelled region
-never touches the clipboard. Annotations use Swappy's own Copy button/shortcut.
-"""
+"""Capture first, select from frozen pixels. No scene changes enter the image."""
+import datetime
+import fcntl
+import io
+import json
 import os
+from pathlib import Path
+import re
+import select
 import subprocess
 import sys
+import tempfile
+import time
+from PIL import Image
 
-mode = sys.argv[1] if len(sys.argv) == 2 else 'region'
-if mode not in ('region', 'annotate', 'full'):
-    sys.exit('Usage: workstation-screenshot [region|annotate|full]')
 
 def fail(message):
-    print(message, file=sys.stderr)
-    raise SystemExit(1)
+    raise RuntimeError(message)
 
-capture = ['grim', '-t', 'png', '-l', '2']
-try:
-    if mode != 'full':
-        selection = subprocess.run(
-            ['slurp', '-b', '#00000066', '-c', '#ccccccff', '-s', '#ffffff0a', '-w', '1'],
-            text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+def run(args, **kwargs):
+    return subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+
+
+def crop_snapshot(png, geometry, origin, scale):
+    match = re.fullmatch(r'(-?\d+),(-?\d+) (\d+)x(\d+)', geometry.strip())
+    if not match:
+        fail('Invalid capture selection; clipboard unchanged')
+    x, y, width, height = map(int, match.groups())
+    if width < 1 or height < 1:
+        fail('Empty capture selection; clipboard unchanged')
+    image = Image.open(io.BytesIO(png))
+    left, top = round((x - origin[0]) * scale), round((y - origin[1]) * scale)
+    right, bottom = round((x + width - origin[0]) * scale), round((y + height - origin[1]) * scale)
+    if left < 0 or top < 0 or right > image.width or bottom > image.height:
+        fail('Selection extends beyond the captured desktop; clipboard unchanged')
+    output = io.BytesIO()
+    image.crop((left, top, right, bottom)).save(output, format='PNG', compress_level=2)
+    return output.getvalue()
+
+
+def frozen_selection(png, bounds, directory):
+    snapshot = directory / 'frozen.png'
+    snapshot.write_bytes(png)
+    env = dict(os.environ, IRIS_CAPTURE_IMAGE=str(snapshot), IRIS_CAPTURE_GEOMETRY=json.dumps(bounds))
+    overlay = subprocess.Popen(['qs', '-c', 'iris-capture'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    try:
+        deadline = time.monotonic() + 8
+        log = b''
+        while b'IRIS_CAPTURE_READY' not in log:
+            if overlay.poll() is not None:
+                fail('Unable to display frozen capture: ' + log.decode(errors='replace')[-800:])
+            if time.monotonic() > deadline:
+                fail('Frozen capture did not become ready; clipboard unchanged')
+            ready, _, _ = select.select([overlay.stdout], [], [], 0.2)
+            if ready:
+                log += os.read(overlay.stdout.fileno(), 4096)
+        selection = run(['slurp', '-b', '#00000044', '-c', '#c7d6e6ff', '-s', '#ffffff08', '-w', '1'], text=True)
         if selection.returncode or not selection.stdout.strip():
+            return None
+        return crop_snapshot(png, selection.stdout, (bounds['x'], bounds['y']), bounds['scale'])
+    finally:
+        overlay.terminate()
+        try:
+            overlay.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            overlay.kill()
+            overlay.wait()
 
-            if selection.stderr.strip() and 'cancel' not in selection.stderr.lower():
-                print(selection.stderr.strip(), file=sys.stderr)
-                raise SystemExit(1)
-            raise SystemExit(0)
-        capture += ['-g', selection.stdout.strip()]
-    image = subprocess.run([*capture, '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if image.returncode:
-        fail(image.stderr.decode(errors='replace').strip() or 'Screen capture failed')
-    if not image.stdout.startswith(b'\x89PNG\r\n\x1a\n'):
-        fail('Capture did not produce a PNG; clipboard unchanged')
 
-    copied = subprocess.run(['wl-copy', '--type', 'image/png'], input=image.stdout)
-    if copied.returncode:
-        fail('Unable to copy screenshot to the Wayland clipboard')
-    if mode == 'annotate':
+def main():
+    mode = sys.argv[1] if len(sys.argv) == 2 else 'region'
+    if mode not in ('region', 'annotate', 'full'):
+        fail('Usage: workstation-screenshot [region|annotate|full]')
+    runtime = Path(os.environ.get('XDG_RUNTIME_DIR', '/tmp'))
+    with (runtime / 'iris-screenshot.lock').open('w') as guard:
+        try:
+            fcntl.flock(guard, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return
+        locked = run(['qs', '-c', 'caelestia', 'ipc', 'call', 'lock', 'isLocked'], text=True).stdout.strip() == 'true'
+        directory = Path.home() / 'Pictures/Screenshots'
+        directory.mkdir(parents=True, exist_ok=True)
+        filename = directory / ('IRIS-' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f') + '.png')
+        if locked:
+            # The lock shell renders only its own visible surface. No desktop
+            # capture permission or unlocking is needed while the session is locked.
+            with tempfile.TemporaryDirectory(prefix='iris-lock-capture-', dir=runtime) as temp:
+                snapshot = Path(temp) / 'lock.png'
+                result = run(['qs', '-c', 'caelestia', 'ipc', 'call', 'lock', 'capture', str(filename), 'true' if mode != 'full' else 'false', str(snapshot)], text=True)
+                if result.returncode or result.stdout.strip() != 'requested':
+                    fail(result.stderr.strip() or result.stdout.strip() or 'Lock-screen capture unavailable')
+                deadline = time.monotonic() + (300 if mode != 'full' else 8)
+                while time.monotonic() < deadline:
+                    if Path(str(snapshot) + '.cancelled').exists():
+                        return
+                    if filename.exists() and filename.stat().st_size:
+                        try:
+                            png = filename.read_bytes()
+                            Image.open(io.BytesIO(png)).verify()
+                            break
+                        except (OSError, SyntaxError):
+                            pass
+                    time.sleep(0.05)
+                else:
+                    run(['qs', '-c', 'caelestia', 'ipc', 'call', 'lock', 'cancelCapture'])
+                    fail('Lock-screen capture timed out')
+        else:
+            monitors = json.loads(run(['hyprctl', '-j', 'monitors'], text=True).stdout)
+            monitors = [m for m in monitors if not m.get('disabled') and m.get('mirrorOf', 'none') == 'none']
+            bounds = {'x': min(m['x'] for m in monitors), 'y': min(m['y'] for m in monitors), 'scale': max(m['scale'] for m in monitors)}
+            image = run(['grim', '-s', str(bounds['scale']), '-t', 'png', '-l', '2', '-'])
+            if image.returncode:
+                fail(image.stderr.decode(errors='replace').strip() or 'Screen capture failed')
+            png = image.stdout
+            if not png.startswith(b'\x89PNG\r\n\x1a\n'):
+                fail('Capture did not produce a PNG; clipboard unchanged')
+            if mode != 'full':
+                with tempfile.TemporaryDirectory(prefix='iris-capture-', dir=runtime) as temp:
+                    png = frozen_selection(png, bounds, Path(temp))
+                if png is None:
+                    return
+            filename.write_bytes(png)
+        copied = subprocess.run(['wl-copy', '--type', 'image/png'], input=png, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if copied.returncode:
+            fail('Screenshot saved, but copying to clipboard failed: ' + str(filename))
+        print(filename)
+        if mode == 'annotate' and not locked:
+            subprocess.run(['swappy', '-f', str(filename)], check=True)
 
-        raise SystemExit(subprocess.run(['swappy', '-f', '-'], input=image.stdout).returncode)
-except FileNotFoundError as error:
-    fail(f'Missing screenshot dependency: {error.filename}')
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (RuntimeError, OSError, subprocess.SubprocessError, ValueError) as error:
+        print(error, file=sys.stderr)
+        raise SystemExit(1)

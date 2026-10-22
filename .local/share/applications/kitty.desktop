@@ -1,12 +1,12 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=kitty
+Name=Terminal
 GenericName=Terminal emulator
-Comment=Fast, feature-rich, GPU based terminal
-TryExec=kitty --single-instance --instance-group iris-interactive --class iris-float
+Comment=Open a terminal
+TryExec=/home/iris/.local/bin/iris-terminal
 StartupNotify=true
-Exec=kitty --single-instance --instance-group iris-interactive --class iris-float
+Exec=/home/iris/.local/bin/iris-terminal
 Icon=kitty
 Categories=System;TerminalEmulator;
 X-TerminalArgExec=--

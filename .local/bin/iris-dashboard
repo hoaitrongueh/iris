@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Own only IRIS windows; no resident controller and no focus-stealing timer."""
+"""Native IRIS dashboard shortcuts; scratch terminal compatibility, no resident controller."""
 import fcntl,json,os,subprocess,sys,time
 from pathlib import Path
 home=Path.home()
@@ -9,18 +9,15 @@ def dispatch(code):
     result=run('hyprctl','dispatch',code)
     if result.stdout.strip()!='ok': raise RuntimeError(result.stdout.strip())
 def windows(role): return [c for c in query('clients') if c['class']==role]
-def visible(): return any(m['specialWorkspace']['name']=='special:iris' for m in query('monitors'))
-def launch(role,mode):
-    run('uwsm','app','-t','service','-a','iris','--','kitty','--class',role,'-o','font_size=10','-o','background_opacity=0.62','-o','window_padding_width=16','-o','scrollback_lines=500','-o','confirm_os_window_close=0',str(home/'.local/bin/iris-panel'),mode)
-def close(role):
-    for c in windows(role): dispatch('hl.dsp.window.close({window='+json.dumps('address:'+c['address'])+'})')
 action=sys.argv[1] if len(sys.argv)>1 else 'toggle'
+commands={'toggle':['toggle'],'show':['show'],'hide':['hide'],'clock':['tab','0'],'identity':['tab','2'],'status':['status']}
+if action in commands:
+    os.execvp('qs',['qs','-c','caelestia','ipc','call','irisDashboard',*commands[action]])
+if action != 'scratch': raise SystemExit('Use toggle|show|hide|clock|identity|scratch|status')
+subprocess.run(['qs','-c','caelestia','ipc','call','irisDashboard','hide'],check=True)
 with open(Path(os.environ['XDG_RUNTIME_DIR'])/'iris-dashboard.lock','w') as lock:
     fcntl.flock(lock,fcntl.LOCK_EX)
-    if action=='scratch':
-        if visible():
-            dispatch('hl.dsp.workspace.toggle_special("iris")')
-            for role in ('iris-dashboard','iris-clock','iris-identity'): close(role)
+    if action == 'scratch':
         if not windows('iris-scratch'):
             run('uwsm','app','-t','service','-a','iris','--','kitty','--class','iris-scratch')
             deadline=time.monotonic()+8
@@ -28,20 +25,3 @@ with open(Path(os.environ['XDG_RUNTIME_DIR'])/'iris-dashboard.lock','w') as lock
                 if time.monotonic()>deadline: raise SystemExit('Scratch terminal startup timed out; inspect journal')
                 time.sleep(.05)
         dispatch('hl.dsp.workspace.toggle_special("magic")')
-    elif action in ('toggle','show','hide'):
-        hide=action=='hide' or (action=='toggle' and visible())
-        if hide:
-            if visible(): dispatch('hl.dsp.workspace.toggle_special("iris")')
-            for role in ('iris-dashboard','iris-clock','iris-identity'): close(role)
-        else:
-            if not windows('iris-dashboard'): launch('iris-dashboard','system')
-            deadline=time.monotonic()+8
-            while not windows('iris-dashboard'):
-                if time.monotonic()>deadline: raise SystemExit('Dashboard startup timed out; inspect journal')
-                time.sleep(.05)
-            if not visible(): dispatch('hl.dsp.workspace.toggle_special("iris")')
-    elif action in ('clock','identity'):
-        role='iris-'+action
-        if windows(role): close(role)
-        else: launch(role,action)
-    else: raise SystemExit('Use toggle|show|hide|clock|identity|scratch')

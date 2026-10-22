@@ -21,14 +21,27 @@
     },
     "deformScale": 0,
     "font": {
-      "scale": 0.82
+      "scale": 0.82,
+      "body": {
+        "family": "Adwaita Sans"
+      },
+      "label": {
+        "family": "Adwaita Sans"
+      },
+      "title": {
+        "family": "Adwaita Sans"
+      },
+      "headline": {
+        "family": "Adwaita Sans"
+      },
+      "clock": "Adwaita Sans",
+      "workspaces": "Adwaita Sans"
     }
   },
   "general": {
     "apps": {
       "terminal": [
-        "/home/iris/.local/bin/iris-terminal",
-        "float"
+        "/home/iris/.local/bin/iris-terminal"
       ],
       "explorer": [
         "dolphin"
@@ -61,12 +74,14 @@
       "enabled": false
     },
     "enabled": true,
-    "wallpaperEnabled": true
+    "wallpaperEnabled": false
   },
   "dashboard": {
     "showWeather": false,
     "showPerformance": true,
-    "showClockSeconds": false
+    "showClockSeconds": false,
+    "showDashboard": true,
+    "showMedia": true
   },
   "launcher": {
     "vimKeybinds": false,
@@ -77,7 +92,8 @@
     "maxShown": 5
   },
   "services": {
-    "smartScheme": false
+    "smartScheme": false,
+    "visualiserBars": 32
   },
   "bar": {
     "tray": {
@@ -91,7 +107,7 @@
       "activeTrail": false
     },
     "persistent": false,
-    "showOnHover": true,
+    "showOnHover": false,
     "activeWindow": {
       "compact": true
     },
@@ -131,6 +147,9 @@
         "id": "battery",
         "enabled": true
       }
+    ],
+    "excludedScreens": [
+      ".*"
     ]
   },
   "border": {
